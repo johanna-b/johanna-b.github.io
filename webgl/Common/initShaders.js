@@ -1,5 +1,5 @@
 //
-//  LoadShaders.js
+//  initShaders.js
 //
 
 function initShaders( gl, vertexShaderId, fragmentShaderId )
