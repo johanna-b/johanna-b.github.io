@@ -53,7 +53,7 @@ window.onload = function init()
     };
 
     document.getElementById("Controls" ).onclick = function(event) {
-        switch( event.srcElement.index ) {
+        switch( event.target.index ) {
           case 0:
             direction = !direction;
             break;

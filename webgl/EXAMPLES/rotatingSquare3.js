@@ -50,18 +50,18 @@ window.onload = function init()
     // Initialize event handlers
 
     document.getElementById("testValue").onchange = function(){
-    console.log(event.srcElement.value);
+    console.log(event.target.value);
     };
 
-    document.getElementById("slider").onchange = function() {
-        speed = 100 - event.srcElement.value;
+    document.getElementById("slider").onchange = function(event) {
+        speed = 100 - event.target.value;
     };
     document.getElementById("Direction").onclick = function () {
         direction = !direction;
     };
 
     document.getElementById("Controls").onclick = function( event) {
-        switch(event.srcElement.index) {
+        switch(event.target.index) {
           case 0:
             direction = !direction;
             break;

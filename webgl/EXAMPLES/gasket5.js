@@ -48,8 +48,8 @@ function init()
     gl.vertexAttribPointer( vPosition, 2, gl.FLOAT, false, 0, 0 );
     gl.enableVertexAttribArray( vPosition );
 
-        document.getElementById("slider").onchange = function() {
-        numTimesToSubdivide = event.srcElement.value;
+        document.getElementById("slider").onchange = function(event) {
+        numTimesToSubdivide = parseInt(event.target.value);
         render();
     };
 
@@ -67,7 +67,7 @@ function divideTriangle( a, b, c, count )
 
     // check for end of recursion
 
-    if ( count === 0 ) {
+    if ( count == 0 ) {
         triangle( a, b, c );
     }
     else {
