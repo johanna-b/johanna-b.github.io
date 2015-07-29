@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" type="text/css" href="simple_style.css">
+</head>
+
+
+<script id="vertex-shader" type="x-shader/x-vertex">
+attribute  vec4 vPosition;
+attribute  vec3 vNormal;
+varying vec4 fColor;
+
+//uniform vec4 ambientProduct, diffuseProduct, specularProduct;
+uniform mat4 modelViewMatrix;
+uniform mat4 projectionMatrix;
+//uniform vec4 lightPosition;
+//uniform float shininess;
+void main()
+{
+
+    
+    /*
+    vec3 pos = -(modelViewMatrix * vPosition).xyz;
+    vec3 light = lightPosition.xyz;
+    vec3 L = normalize( light - pos );
+
+	
+    vec3 E = normalize( -pos );
+    vec3 H = normalize( L + E );
+    
+    vec4 NN = vec4(vNormal,0);
+
+    // Transform vertex normal into eye coordinates
+       
+    vec3 N = normalize( (modelViewMatrix*NN).xyz);
+
+    // Compute terms in the illumination equation
+    vec4 ambient = ambientProduct;
+
+    float Kd = max( dot(L, N), 0.0 );
+    vec4  diffuse = Kd*diffuseProduct;
+
+    float Ks = pow( max(dot(N, H), 0.0), shininess );
+    vec4  specular = Ks * specularProduct;
+    
+    if( dot(L, N) < 0.0 ) {
+	specular = vec4(0.0, 0.0, 0.0, 1.0);
+    }
+    */
+
+    gl_Position = projectionMatrix * modelViewMatrix * vPosition;
+
+    //fColor = ambient + diffuse +specular;
+    fColor.rgb = vNormal; //vec3(1.0, 0.0, 0.0);
+    fColor.a = 1.0;
+}
+</script>
+
+<script id="fragment-shader" type="x-shader/x-fragment">
+
+precision mediump float;
+
+
+varying vec4 fColor;
+
+void
+main()
+{
+    gl_FragColor = fColor;
+}
+</script>
+
+<script type="text/javascript" src="../Common/webgl-utils.js"></script>
+<script type="text/javascript" src="../Common/initShaders.js"></script>
+<script type="text/javascript" src="../Common/MV.js"></script>
+<script type="text/javascript" src="simple_cad.js"></script>
+
+<body>
+<canvas id="gl-canvas" width="512" height="512">
+Oops ... your browser doesn't support the HTML5 canvas element
+</canvas>
+<div class="wrapper">
+    <div class="first">
+        <b>New Object:</b><br>&nbsp;
+        <div>
+            object:<br>
+            <select id = "menu_object_type" size = "3">
+                <option value = "0" selected="selected">Sphere</option>
+                <option value = "1">Cone</option>
+                <option value = "2">Cylinder</option>
+
+            </select>
+        </div>
+        <br>
+        <div>
+            radius:<br>  1 <input id="slider_radius" type="range"
+                                      min="1" max="10" step="1" value="1" />
+            10
+        </div>
+        <br>
+        <div>
+            height:<br>  1 <input id="slider_height" type="range"
+                                  min="1" max="10" step="1" value="1" />
+            10
+        </div>
+        <br>
+        <input type="checkbox" id="check_show_temp_object">show temp object
+
+
+    </div>
+    <div class="first">
+        <b>Location/Orientation:</b><br>&nbsp;
+        <div>
+            x location:<br>  -1 <input id="slider_x" type="range"
+                                  min="-1" max="1" step="0.1" value="0" />
+            1
+        </div>
+
+        <div>
+            y location:<br>  -1 <input id="slider_y" type="range"
+                                        min="-1" max="1" step="0.1" value="0" />
+            1
+        </div>
+
+        <div>
+            z location:<br>  -1 <input id="slider_z" type="range"
+                                        min="-1" max="1" step="0.1" value="0" />
+            1
+        </div>
+        <br>
+        <div>
+            x orientation:<br>  -180 <input id="slider_x_spin" type="range"
+                                       min="-180" max="180" step="5" value="0" />
+            180
+        </div>
+
+        <div>
+            y orientation:<br>  -180 <input id="slider_y_spin" type="range"
+                                            min="-180" max="180" step="5" value="0" />
+            180
+        </div>
+
+        <div>
+            z orientation:<br>  -180 <input id="slider_z_spin" type="range"
+                                            min="-180" max="180" step="5" value="0" />
+            180
+        </div>
+        <br>
+        <button id = "button_add_object">Add object</button>
+
+    </div>
+
+    <div class="first">
+        <b>Rendering/Lighting:</b><br>&nbsp;
+        <br>
+        render mode:<br>
+        <select id = "menu_render_mode" size = "3">
+            <option value = "0" selected="selected" >Wireframe</option>
+            <option value = "1">Flat Fill</option>
+            <option value = "2">Phong shaded</option>
+        </select>
+        <br><br>
+        <button id = "button_add_light">add moving light source</button>
+        <br><br>
+        <input type="checkbox" id="check_use_distance_attenuation"> enable distance attenuation
+    </div>
+
+    <div class="first">
+        <b>View:</b><br>&nbsp;
+        <br>
+        <div>
+            move x:<br>  -1 <input id="slider_camera_x" type="range"
+                                       min="-1" max="1" step="0.1" value="0" />
+            1
+        </div>
+        <br>
+        <div>
+            move y:<br>  -1 <input id="slider_camera_y" type="range"
+                                       min="-1" max="1" step="0.1" value="0" />
+            1
+        </div>
+        <br>
+        <div>
+            move z:<br>  -1 <input id="slider_camera_z" type="range"
+                                       min="-1" max="1" step="0.1" value="0" />
+            1
+        </div>
+</div>
+</body>
+</html>

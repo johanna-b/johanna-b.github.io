@@ -1,0 +1,17 @@
+.wrapper {
+    width: 1000px;
+    border: 1px solid black;
+    padding: 3px;
+    overflow: hidden; /* will contain if #first is longer than #second */
+}
+.first {
+    width: 200px;
+    height: 350px;
+    padding: 1em;
+    float:left; /* add this */
+    border: 1px solid gray;
+}
+.second {
+    border: 1px solid green;
+    overflow: hidden; /* if you don't want #second to wrap below #first */
+}
