@@ -360,7 +360,8 @@ function createCylinder(radius, height, xpos, ypos, zpos, xrot, yrot, zrot)
         // indices for second triangle
         indexarray.push(second);
         indexarray.push(second + 1);
-        indexarray.push(first + 1);
+        indexarray.push(first + 1); 
+
     }
 
     // transformation
@@ -464,7 +465,7 @@ window.onload = function init() {
     document.getElementById("slider_radius").onchange = function(){_obj_radius = parseFloat(event.srcElement.value);};
     document.getElementById("slider_height").onchange = function(){_obj_height = parseFloat(event.srcElement.value);};
 
-    document.getElementById("check_show_temp_object").onclick = function(){_show_temp_obj = document.getElementById('check_show_temp_object').checked;};
+    //document.getElementById("check_show_temp_object").onclick = function(){_show_temp_obj = document.getElementById('check_show_temp_object').checked;};
 
     document.getElementById("slider_x").onchange = function(){_obj_x = parseFloat(event.srcElement.value);};
     document.getElementById("slider_y").onchange = function(){_obj_y = parseFloat(event.srcElement.value);};
