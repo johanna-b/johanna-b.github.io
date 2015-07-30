@@ -53,7 +53,7 @@ void main()
     gl_Position = projectionMatrix * modelViewMatrix * vPosition;
 
     //fColor = ambient + diffuse +specular;
-    if (col.r >= 0.0 ) {
+    if ( col.r >= 0.0 ) {
         fColor.rgb = col; //vec3(1.0, 0.0, 0.0);
     }else{
         fColor.rgb = vNormal;

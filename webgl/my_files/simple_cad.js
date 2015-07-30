@@ -193,12 +193,12 @@ function createCone(radius, height, xpos, ypos, zpos, xrot, yrot, zrot)
     var indexarray = [];
 
     //center
-    vertarray.push(vec4(xpos, ypos, zpos,1.0));
+    vertarray.push(vec4(0.0, 0.0, 0.0,1.0));
     normarray.push(vec3(0.0, 0.0, 1.0));
 
     //top
-    vertarray.push(vec4(xpos, ypos, zpos-height,1.0));
-    normarray.push(vec3(0.0, 0.0, -1.0));
+    vertarray.push(vec4(0.0, 0.0,-height,1.0));
+    normarray.push(vec3(0.0, 0.0,-1.0));
 
     for (var longNumber = 0; longNumber <= _sphere_longitude_bands; longNumber++) {
         var phi = longNumber * 2 * Math.PI / _sphere_longitude_bands;
@@ -216,7 +216,7 @@ function createCone(radius, height, xpos, ypos, zpos, xrot, yrot, zrot)
         //textureCoordData.push(u);
         //textureCoordData.push(v);
 
-        vertarray.push(vec4(radius * x + xpos, radius * y + ypos, zpos, 1.0));
+        vertarray.push(vec4(radius * x, radius * y, 0.0, 1.0));
 
     }
 
@@ -248,14 +248,31 @@ function createCone(radius, height, xpos, ypos, zpos, xrot, yrot, zrot)
 
     }
 
+    // transformation
+    //+t/R/-t/T
+
     // rotation
-    var rotMat = mat4();
-    rotMat = mult(rotMat, rotate( xrot, [1, 0, 0] ));
-    rotMat = mult(rotMat, rotate( yrot, [0, 1, 0] ));
-    rotMat = mult(rotMat, rotate( zrot, [0, 0, 1] ));
+    var trafo = mat4();
+
+    trafo = translate(xpos, ypos, ypos);
+
+    var trans1 = mat4();
+    trans1 = translate(0,0,-height/2.0);
+
+    var rot = mat4();
+    rot = mult(rot, rotate( xrot, [1, 0, 0] ));
+    rot = mult(rot, rotate( yrot, [0, 1, 0] ));
+    rot = mult(rot, rotate( zrot, [0, 0, 1] ));
+
+    var trans2 = mat4();
+    trans2 = translate(0,0,height/2.0);
+
+    trafo = mult(trafo, trans1);
+    trafo = mult(trafo, rot);
+    trafo = mult(trafo, trans2);
 
     for ( var i = 0; i < vertarray.length; i++ ){
-        vertarray[i] = matVecMul(rotMat, vertarray[i]); //matVecMul
+        vertarray[i] = matVecMul(trafo, vertarray[i]); //matVecMul
     }
 
     return [vertarray, normarray, indexarray];
@@ -269,10 +286,10 @@ function createCylinder(radius, height, xpos, ypos, zpos, xrot, yrot, zrot)
 
     //todo: rotate
 
-    vertarray.push(vec4(xpos, ypos, zpos,1.0));
+    vertarray.push(vec4(0.0, 0.0, 0.0, 1.0));
     normarray.push(vec3(0.0, 0.0, 1.0));
 
-    vertarray.push(vec4(xpos, ypos, zpos-height,1.0));
+    vertarray.push(vec4(0.0, 0.0, -height,1.0));
     normarray.push(vec3(0.0, 0.0, -1.0));
 
     for ( var discNumber = 0; discNumber < 2; ++discNumber) {
@@ -293,10 +310,10 @@ function createCylinder(radius, height, xpos, ypos, zpos, xrot, yrot, zrot)
             //textureCoordData.push(u);
             //textureCoordData.push(v);
 
-            vertarray.push(vec4(radius * x + xpos, radius * y + ypos, zpos + heightoffset, 1.0));
+            vertarray.push(vec4(radius * x, radius * y, heightoffset, 1.0));
 
             //console.log( "radius:", radius, "y:", y, "r*y:", radius*y, "ypos:", ypos, "r*y+ypos", (radius*y)+ypos);
-            console.log(radius * x + xpos, radius * y + ypos, zpos + heightoffset, 1.0);
+            //console.log(radius * x, radius * y, heightoffset, 1.0);
         }
     }
 
@@ -340,23 +357,37 @@ function createCylinder(radius, height, xpos, ypos, zpos, xrot, yrot, zrot)
         indexarray.push(second);
         indexarray.push(first + 1);
 
-
         // indices for second triangle
         indexarray.push(second);
         indexarray.push(second + 1);
         indexarray.push(first + 1);
     }
 
-
+    // transformation
+    //+t/R/-t/T
 
     // rotation
-    var rotMat = mat4();
-    rotMat = mult(rotMat, rotate( xrot, [1, 0, 0] ));
-    rotMat = mult(rotMat, rotate( yrot, [0, 1, 0] ));
-    rotMat = mult(rotMat, rotate( zrot, [0, 0, 1] ));
+    var trafo = mat4();
+
+    trafo = translate(xpos, ypos, ypos);
+
+    var trans1 = mat4();
+    trans1 = translate(0,0,-height/2.0);
+
+    var rot = mat4();
+    rot = mult(rot, rotate( xrot, [1, 0, 0] ));
+    rot = mult(rot, rotate( yrot, [0, 1, 0] ));
+    rot = mult(rot, rotate( zrot, [0, 0, 1] ));
+
+    var trans2 = mat4();
+    trans2 = translate(0,0,height/2.0);
+
+    trafo = mult(trafo, trans1);
+    trafo = mult(trafo, rot);
+    trafo = mult(trafo, trans2);
 
     for ( var i = 0; i < vertarray.length; i++ ){
-        vertarray[i] = matVecMul(rotMat, vertarray[i]); //matVecMul
+        vertarray[i] = matVecMul(trafo, vertarray[i]); //matVecMul
     }
 
     return [vertarray, normarray, indexarray];
