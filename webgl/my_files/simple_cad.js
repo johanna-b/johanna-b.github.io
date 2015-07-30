@@ -3,23 +3,6 @@
 var canvas;
 var gl;
 
-var numVertices  = 36;
-
-var pointsArray = [];
-var normalsArray = [];
-var indexArray = [];
-var indexItems = 0;
-
-var vertices = [
-        vec4( -0.5, -0.5,  0.5, 1.0 ),
-        vec4( -0.5,  0.5,  0.5, 1.0 ),
-        vec4( 0.5,  0.5,  0.5, 1.0 ),
-        vec4( 0.5, -0.5,  0.5, 1.0 ),
-        vec4( -0.5, -0.5, -0.5, 1.0 ),
-        vec4( -0.5,  0.5, -0.5, 1.0 ),
-        vec4( 0.5,  0.5, -0.5, 1.0 ),
-        vec4( 0.5, -0.5, -0.5, 1.0 )
-    ];
 
 var lightPosition = vec4(1.0, 1.0, 1.0, 0.0 );
 var lightAmbient = vec4(0.2, 0.2, 0.2, 1.0 );
@@ -33,6 +16,7 @@ var materialShininess = 100.0;
 
 var ctm;
 var ambientColor, diffuseColor, specularColor;
+
 var modelView, projection;
 var viewerPos;
 var program;
@@ -51,8 +35,8 @@ var flag = true;
 //=============
 
 var _obj_type = 0;
-var _obj_radius = 1.0;
-var _obj_height = 1.0;
+var _obj_radius = 0.5;
+var _obj_height = 0.5;
 var _show_temp_obj = 0;
 
 var _obj_x = 0.0;
@@ -70,63 +54,87 @@ var _camera_x = 0.0;
 var _camera_y = 0.0;
 var _camera_z = 0.0;
 
-var _sphere_latitude_bands = 2;
-var _sphere_longitude_bands = 2;
+var _sphere_latitude_bands = 16;
+var _sphere_longitude_bands = 16;
 
 var _spheres_vertices = [];
 var _spheres_normals = [];
-var _spheres_indices = []
+var _spheres_indices = [];
+var _spheres_index_offsets = [];
+var _spheres_type = [];
 var _num_spheres_offset = 0;
 
 var nBuffer;
 var vBuffer;
 var iBuffer;
 
-function degToRad(degrees) {
-    return degrees * Math.PI / 180;
+function matVecMul( m, v){
+
+    var res = vec4();
+
+    for ( var m_row = 0; m_row < m.length; ++m_row ) {
+        var sum = 0.0;
+        for ( var m_col = 0; m_col < v.length; ++m_col ) {
+            sum += m[m_row][m_col] * v[m_col];
+
+        }
+       // console.log("index: ", m_row, "val:", sum);
+        res[m_row] = sum;
+    }
+    return res;
 }
+
 
 function createObject()
 {
-    //todo
-    console.log("creating new object!")
+    var arrays = [];
+    if ( _obj_type == 0 ) { //sphere
 
-    var arrays = createSphere(0.2, 0.3, 0.3, 0.0);
-    _spheres_vertices = _spheres_vertices.concat( arrays[0] );
-    _spheres_normals = _spheres_normals.concat( arrays[1] );
-    _spheres_indices = _spheres_indices.concat( arrays[2] );
+        console.log("creating new sphere: r: ", _obj_radius, " xyz: ", _obj_x, _obj_y, _obj_z);
 
-    gl.bindBuffer( gl.ARRAY_BUFFER, nBuffer );
-    gl.bufferData( gl.ARRAY_BUFFER, flatten(_spheres_normals), gl.STATIC_DRAW );
+        arrays = createSphere(_obj_radius, _obj_x, _obj_y, _obj_z);
+        _spheres_type.push(0);
 
-    gl.bindBuffer( gl.ARRAY_BUFFER, vBuffer );
-    gl.bufferData( gl.ARRAY_BUFFER, flatten(_spheres_vertices), gl.STATIC_DRAW );
+    } else if (_obj_type == 1 ) { //cone
 
-    gl.bindBuffer( gl.ELEMENT_ARRAY_BUFFER, iBuffer );
-    gl.bufferData( gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(_spheres_indices), gl.STATIC_DRAW );
+        console.log("creating new cone: r: ", _obj_radius, "height:", _obj_height, " xyz: ", _obj_x, _obj_y, _obj_z, "rotation: ", _obj_x_spin, _obj_y_spin, _obj_z_spin );
+
+        arrays = createCone(_obj_radius, _obj_height, _obj_x, _obj_y, _obj_z, _obj_x_spin, _obj_y_spin, _obj_z_spin );
+        _spheres_type.push(1);
+
+    } else if (_obj_type == 2 ) { //cylinder
+
+        console.log("creating new cylinder: r: ", _obj_radius, "height:", _obj_height, " xyz: ", _obj_x, _obj_y, _obj_z, "rotation: ", _obj_x_spin, _obj_y_spin, _obj_z_spin );
+
+        arrays = createCylinder(_obj_radius, _obj_height, _obj_x, _obj_y, _obj_z, _obj_x_spin, _obj_y_spin, _obj_z_spin );
+        _spheres_type.push(2);
+
+    }
+
+    _spheres_vertices = _spheres_vertices.concat(arrays[0]);
+    _spheres_normals = _spheres_normals.concat(arrays[1]);
+    _spheres_indices = _spheres_indices.concat(arrays[2]);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, nBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, flatten(_spheres_normals), gl.STATIC_DRAW);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, vBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, flatten(_spheres_vertices), gl.STATIC_DRAW);
+
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, iBuffer);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(_spheres_indices), gl.STATIC_DRAW);
 
     iBuffer.numItems = _spheres_indices.length;
 
-    indexItems = iBuffer.numItems;
-
-    console.log(_spheres_vertices);
-
-    console.log("vbuffer: ", vBuffer);
-    console.log("ibuffer:", iBuffer);
+    _spheres_index_offsets.push(arrays[2].length);
 
 }
 
 function createSphere(radius, xpos, ypos, zpos)
 {
-    //pointsArray = [];
-    //normalsArray = [];
-    //indexArray = [];
-
     var vertarray = [];
     var normarray = [];
     var indexarray = [];
-
-    var count = 0;
 
     for (var latNumber = 0; latNumber <= _sphere_latitude_bands; latNumber++) {
         var theta = latNumber * Math.PI / _sphere_latitude_bands;
@@ -145,31 +153,15 @@ function createSphere(radius, xpos, ypos, zpos)
             //var v = 1 - (latNumber / _sphere_latitude_bands);
 
             normarray.push(vec3(x, y, z));
-            //normalData.push(x);
-            //normalData.push(y);
-            //normalData.push(z);
 
             //textureCoordData.push(u);
             //textureCoordData.push(v);
 
             vertarray.push(vec4(radius * x + xpos, radius * y + ypos, radius * z + zpos, 1.0));
-            //vertexPositionData.push(radius * x + xpos);
-            //vertexPositionData.push(radius * y + ypos);
-            //vertexPositionData.push(radius * z + zpos);
-
-            //console.log(radius * x + xpos, radius * y + ypos, radius * z + zpos, 1.0);
-            count++;
         }
     }
 
-    console.log("num points: ", count);
-
-    count = 0;
-
-
     var index_offset = _spheres_vertices.length;
-
-
 
     for (var latNumber = 0; latNumber < _sphere_latitude_bands; latNumber++) {
         for (var longNumber = 0; longNumber < _sphere_longitude_bands; longNumber++) {
@@ -177,52 +169,199 @@ function createSphere(radius, xpos, ypos, zpos)
             var first = index_offset + (latNumber * (_sphere_longitude_bands + 1)) + longNumber;
             var second = first + _sphere_longitude_bands + 1;
 
-            if ( _render_mode == 0 ) {
-                // indices for first triangle
-                indexarray.push(first);
-                indexarray.push(second);
+            // indices for first triangle
+            indexarray.push(first);
+            indexarray.push(second);
+            indexarray.push(first + 1);
 
-                indexarray.push(second);
-                indexarray.push(first + 1);
-
-                indexarray.push(first + 1);
-                indexarray.push(first);
-
-                // indices for second triangle
-                indexarray.push(second);
-                indexarray.push(second + 1);
-
-                indexarray.push(second + 1);
-                indexarray.push(first + 1);
-
-                indexarray.push(first + 1);
-                indexarray.push(second);
-
-                count +=6;
-            } else if ( _render_mode == 1 ) {
-                // indices for first triangle
-                indexarray.push(first);
-                indexarray.push(second);
-                indexarray.push(first + 1);
-
-                // indices for second triangle
-                indexarray.push(second);
-                indexarray.push(second + 1);
-                indexarray.push(first + 1);
-
-                count += 2;
-            } else {
-                console.log( "unsupported render mode!");
-            }
+            // indices for second triangle
+            indexarray.push(second);
+            indexarray.push(second + 1);
+            indexarray.push(first + 1);
 
         }
     }
 
-    console.log("num primitives: ", count);
-
     return [vertarray, normarray, indexarray];
 
 }
+
+function createCone(radius, height, xpos, ypos, zpos, xrot, yrot, zrot)
+{
+    var vertarray = [];
+    var normarray = [];
+    var indexarray = [];
+
+    //center
+    vertarray.push(vec4(xpos, ypos, zpos,1.0));
+    normarray.push(vec3(0.0, 0.0, 1.0));
+
+    //top
+    vertarray.push(vec4(xpos, ypos, zpos-height,1.0));
+    normarray.push(vec3(0.0, 0.0, -1.0));
+
+    for (var longNumber = 0; longNumber <= _sphere_longitude_bands; longNumber++) {
+        var phi = longNumber * 2 * Math.PI / _sphere_longitude_bands;
+        var sinPhi = Math.sin(phi);
+        var cosPhi = Math.cos(phi);
+
+        var x = sinPhi;
+        var y = cosPhi;
+        var z = 0.0;
+        //var u = 1 - (longNumber / _sphere_longitude_bands);
+        //var v = 1 - (latNumber / _sphere_latitude_bands);
+
+        normarray.push(vec3(x, y, z));
+
+        //textureCoordData.push(u);
+        //textureCoordData.push(v);
+
+        vertarray.push(vec4(radius * x + xpos, radius * y + ypos, zpos, 1.0));
+
+    }
+
+    var index_offset = _spheres_vertices.length;
+
+    // cone
+    for (var longNumber = 0; longNumber < _sphere_longitude_bands; longNumber++) {
+
+        var first = (index_offset + 2) + longNumber;
+        var top = index_offset + 1;
+
+        // indices for first triangle
+        indexarray.push(first);
+        indexarray.push(first + 1);
+        indexarray.push(top);
+
+    }
+
+    // flat bottom
+    for (var longNumber = 0; longNumber < _sphere_longitude_bands; longNumber++) {
+
+        var first = (index_offset + 2) + longNumber;
+        var center = index_offset;
+
+        // indices for first triangle
+        indexarray.push(first);
+        indexarray.push(first + 1);
+        indexarray.push(center);
+
+    }
+
+    // rotation
+    var rotMat = mat4();
+    rotMat = mult(rotMat, rotate( xrot, [1, 0, 0] ));
+    rotMat = mult(rotMat, rotate( yrot, [0, 1, 0] ));
+    rotMat = mult(rotMat, rotate( zrot, [0, 0, 1] ));
+
+    for ( var i = 0; i < vertarray.length; i++ ){
+        vertarray[i] = matVecMul(rotMat, vertarray[i]); //matVecMul
+    }
+
+    return [vertarray, normarray, indexarray];
+}
+
+function createCylinder(radius, height, xpos, ypos, zpos, xrot, yrot, zrot)
+{
+    var vertarray = [];
+    var normarray = [];
+    var indexarray = [];
+
+    //todo: rotate
+
+    vertarray.push(vec4(xpos, ypos, zpos,1.0));
+    normarray.push(vec3(0.0, 0.0, 1.0));
+
+    vertarray.push(vec4(xpos, ypos, zpos-height,1.0));
+    normarray.push(vec3(0.0, 0.0, -1.0));
+
+    for ( var discNumber = 0; discNumber < 2; ++discNumber) {
+        var heightoffset = -discNumber * height;
+        for (var longNumber = 0; longNumber <= _sphere_longitude_bands; longNumber++) {
+            var phi = longNumber * 2 * Math.PI / _sphere_longitude_bands;
+            var sinPhi = Math.sin(phi);
+            var cosPhi = Math.cos(phi);
+
+            var x = sinPhi;
+            var y = cosPhi;
+            var z = 0.0;
+            //var u = 1 - (longNumber / _sphere_longitude_bands);
+            //var v = 1 - (latNumber / _sphere_latitude_bands);
+
+            normarray.push(vec3(x, y, z));
+
+            //textureCoordData.push(u);
+            //textureCoordData.push(v);
+
+            vertarray.push(vec4(radius * x + xpos, radius * y + ypos, zpos + heightoffset, 1.0));
+
+            //console.log( "radius:", radius, "y:", y, "r*y:", radius*y, "ypos:", ypos, "r*y+ypos", (radius*y)+ypos);
+            console.log(radius * x + xpos, radius * y + ypos, zpos + heightoffset, 1.0);
+        }
+    }
+
+    var index_offset = _spheres_vertices.length;
+
+    var center_bottom = index_offset;
+    var center_top = index_offset+1;
+
+    //bottom
+    for (var longNumber = 0; longNumber < _sphere_longitude_bands; longNumber++) {
+
+        var first = (index_offset + 2) + longNumber;
+
+        // indices for first triangle
+        indexarray.push(first);
+        indexarray.push(first + 1);
+        indexarray.push(center_bottom);
+    }
+
+    //top
+    for (var longNumber = 0; longNumber < _sphere_longitude_bands; ++longNumber) {
+
+        var first = (index_offset + 2) + longNumber + _sphere_longitude_bands+1;
+
+        // indices for first triangle
+        indexarray.push(first + 1);
+        indexarray.push(first);
+        indexarray.push(center_top);
+
+        console.log(center_top, first, first+1);
+    }
+
+    //walls
+    for (var longNumber = 0; longNumber < _sphere_longitude_bands; longNumber++) {
+
+        var first = (index_offset + 2) + longNumber;
+        var second = (index_offset + 2) + longNumber + _sphere_longitude_bands+1;
+
+        // indices for first triangle
+        indexarray.push(first);
+        indexarray.push(second);
+        indexarray.push(first + 1);
+
+
+        // indices for second triangle
+        indexarray.push(second);
+        indexarray.push(second + 1);
+        indexarray.push(first + 1);
+    }
+
+
+
+    // rotation
+    var rotMat = mat4();
+    rotMat = mult(rotMat, rotate( xrot, [1, 0, 0] ));
+    rotMat = mult(rotMat, rotate( yrot, [0, 1, 0] ));
+    rotMat = mult(rotMat, rotate( zrot, [0, 0, 1] ));
+
+    for ( var i = 0; i < vertarray.length; i++ ){
+        vertarray[i] = matVecMul(rotMat, vertarray[i]); //matVecMul
+    }
+
+    return [vertarray, normarray, indexarray];
+}
+
 
 function addLight()
 {
@@ -245,20 +384,9 @@ window.onload = function init() {
 
     // ================
     //  Load shaders and initialize attribute buffers
-    // todo
 
     program = initShaders( gl, "vertex-shader", "fragment-shader" );
     gl.useProgram( program );
-
-    //colorCube();
-    var arrays = createSphere(0.2, 0.0, 0.0, 0.0);
-
-    _spheres_vertices =  _spheres_vertices.concat( arrays[0] );
-    _spheres_normals = _spheres_normals.concat( arrays[1] );
-    _spheres_indices = _spheres_indices.concat( arrays[2] );
-
-    //createObject();
-
 
     // normal buffer
     nBuffer = gl.createBuffer();
@@ -269,9 +397,6 @@ window.onload = function init() {
     gl.vertexAttribPointer( vNormal, 3, gl.FLOAT, false, 0, 0 );
     gl.enableVertexAttribArray( vNormal );
 
-    console.log("nbuffer: ", _spheres_normals.length);
-
-
     // vertex buffer
     vBuffer = gl.createBuffer();
     gl.bindBuffer( gl.ARRAY_BUFFER, vBuffer );
@@ -281,9 +406,6 @@ window.onload = function init() {
     gl.vertexAttribPointer(vPosition, 4, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(vPosition);
 
-    console.log("vertex buffer: ", _spheres_vertices.length);
-
-
     // vertex index buffer
     iBuffer = gl.createBuffer();
     gl.bindBuffer( gl.ELEMENT_ARRAY_BUFFER, iBuffer );
@@ -291,16 +413,11 @@ window.onload = function init() {
     iBuffer.itemSize = 1;
     iBuffer.numItems = _spheres_indices.length;
 
-    indexItems = iBuffer.numItems;
-    console.log("index buffer: ", iBuffer.numItems);
-
-    //createObject();
-
-    //thetaLoc = gl.getUniformLocation(program, "theta");
+    // set up camera and projection matrix
 
     viewerPos = vec3(0.0, 0.0, -20.0 );
 
-    projection = ortho(-1, 1, -1, 1, -100, 100);
+    projection = ortho(-1.5, 1.5, -1.5, 1.5, -100, 100);
 
     //var ambientProduct = mult(lightAmbient, materialAmbient);
     //var diffuseProduct = mult(lightDiffuse, materialDiffuse);
@@ -313,18 +430,18 @@ window.onload = function init() {
         _obj_type = document.getElementById("menu_object_type").selectedIndex;
     };
 
-    document.getElementById("slider_radius").onchange = function(){_obj_radius = event.srcElement.value;};
-    document.getElementById("slider_height").onchange = function(){_obj_height = event.srcElement.value;};
+    document.getElementById("slider_radius").onchange = function(){_obj_radius = parseFloat(event.srcElement.value);};
+    document.getElementById("slider_height").onchange = function(){_obj_height = parseFloat(event.srcElement.value);};
 
     document.getElementById("check_show_temp_object").onclick = function(){_show_temp_obj = document.getElementById('check_show_temp_object').checked;};
 
-    document.getElementById("slider_x").onchange = function(){_obj_x = event.srcElement.value;};
-    document.getElementById("slider_y").onchange = function(){_obj_y = event.srcElement.value;};
-    document.getElementById("slider_z").onchange = function(){_obj_z = event.srcElement.value;};
+    document.getElementById("slider_x").onchange = function(){_obj_x = parseFloat(event.srcElement.value);};
+    document.getElementById("slider_y").onchange = function(){_obj_y = parseFloat(event.srcElement.value);};
+    document.getElementById("slider_z").onchange = function(){_obj_z = parseFloat(event.srcElement.value);};
 
-    document.getElementById("slider_x_spin").onchange = function(){_obj_x_spin = event.srcElement.value;};
-    document.getElementById("slider_y_spin").onchange = function(){_obj_y_spin = event.srcElement.value;};
-    document.getElementById("slider_z_spin").onchange = function(){_obj_z_spin = event.srcElement.value;};
+    document.getElementById("slider_x_spin").onchange = function(){_obj_x_spin = parseFloat(event.srcElement.value);};
+    document.getElementById("slider_y_spin").onchange = function(){_obj_y_spin = parseFloat(event.srcElement.value);};
+    document.getElementById("slider_z_spin").onchange = function(){_obj_z_spin = parseFloat(event.srcElement.value);};
 
     document.getElementById("button_add_object").onclick = function(){createObject()};
 
@@ -336,13 +453,14 @@ window.onload = function init() {
 
     document.getElementById("check_use_distance_attenuation").onclick = function() {_render_distance_attenuation = document.getElementById('check_use_distance_attenuation').checked;};
 
-    document.getElementById("slider_camera_x").onchange = function(){_camera_x = event.srcElement.value;};
-    document.getElementById("slider_camera_y").onchange = function(){_camera_y = event.srcElement.value;};
-    document.getElementById("slider_camera_z").onchange = function(){_camera_z = event.srcElement.value;};
+    document.getElementById("slider_camera_x").onchange = function(){_camera_x = parseFloat(event.srcElement.value);};
+    document.getElementById("slider_camera_y").onchange = function(){_camera_y = parseFloat(event.srcElement.value);};
+    document.getElementById("slider_camera_z").onchange = function(){_camera_z = parseFloat(event.srcElement.value);};
 
     // ===============
     // set uniforms
-    // todo
+
+    //thetaLoc = gl.getUniformLocation(program, "theta");
 
 /*
     gl.uniform4fv(gl.getUniformLocation(program, "ambientProduct"),
@@ -364,33 +482,94 @@ window.onload = function init() {
     render();
 }
 
+
+function renderSphere(rendermode, offset_index, running_offset )
+{
+
+    if (_render_mode == 0) { //wireframe
+        gl.uniform3fv(gl.getUniformLocation(program, "col"), flatten(vec3(1.0, 1.0, 1.0)));
+        gl.drawElements(gl.TRIANGLES, offset_index, gl.UNSIGNED_SHORT, running_offset * 2);
+
+        gl.uniform3fv(gl.getUniformLocation(program, "col"), flatten(vec3(0.0, 0.0, 0.0)));
+        gl.drawElements(gl.LINE_LOOP, offset_index, gl.UNSIGNED_SHORT, running_offset * 2); //offset*sizeof(unsigned_short)
+
+    } else if (_render_mode == 1) { //fill
+
+        gl.uniform3fv(gl.getUniformLocation(program, "col"), flatten(vec3(-1.0, -1.0, -1.0)));
+        gl.drawElements(gl.TRIANGLES, offset_index, gl.UNSIGNED_SHORT, running_offset*2);
+    }
+
+}
+
+function renderCone(rendermode, offset_index, running_offset )
+{
+
+    if (_render_mode == 0) { //wireframe
+        gl.uniform3fv(gl.getUniformLocation(program, "col"), flatten(vec3(1.0, 1.0, 1.0)));
+        gl.drawElements(gl.TRIANGLES, offset_index, gl.UNSIGNED_SHORT, running_offset * 2);
+
+        gl.uniform3fv(gl.getUniformLocation(program, "col"), flatten(vec3(0.0, 0.0, 0.0)));
+        gl.drawElements(gl.LINE_LOOP, offset_index, gl.UNSIGNED_SHORT, running_offset * 2); //offset*sizeof(unsigned_short)
+
+    } else if (_render_mode == 1) { //fill
+
+        gl.uniform3fv(gl.getUniformLocation(program, "col"), flatten(vec3(-1.0, -1.0, -1.0)));
+        gl.drawElements(gl.TRIANGLES, offset_index, gl.UNSIGNED_SHORT, running_offset*2);
+    }
+
+}
+
+function renderCylinder(rendermode, offset_index, running_offset )
+{
+
+    if (_render_mode == 0) { //wireframe
+        gl.uniform3fv(gl.getUniformLocation(program, "col"), flatten(vec3(1.0, 1.0, 1.0)));
+        gl.drawElements(gl.TRIANGLES, offset_index, gl.UNSIGNED_SHORT, running_offset * 2);
+
+        gl.uniform3fv(gl.getUniformLocation(program, "col"), flatten(vec3(0.0, 0.0, 0.0)));
+        gl.drawElements(gl.LINE_LOOP, offset_index, gl.UNSIGNED_SHORT, running_offset * 2); //offset*sizeof(unsigned_short)
+
+    } else if (_render_mode == 1) { //fill
+
+        gl.uniform3fv(gl.getUniformLocation(program, "col"), flatten(vec3(-1.0, -1.0, -1.0)));
+        gl.drawElements(gl.TRIANGLES, offset_index, gl.UNSIGNED_SHORT, running_offset*2);
+    }
+
+}
+
 var render = function(){
 
+    gl.clearColor(0.8, 0.8, 0.8, 1.0);
     gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    if(flag) theta[axis] += 2.0;
+    gl.enable(gl.DEPTH_TEST);
+    gl.depthFunc(gl.LEQUAL);
+    gl.enable(gl.POLYGON_OFFSET_FILL);
+    gl.polygonOffset(1.0, 2.0);
 
     modelView = mat4();
-    //modelView = mult(modelView, rotate(theta[xAxis], [1, 0, 0] ));
-    //modelView = mult(modelView, rotate(theta[yAxis], [0, 1, 0] ));
-    //modelView = mult(modelView, rotate(theta[zAxis], [0, 0, 1] ));
+    modelView = mult(modelView, rotate(_camera_x, [1, 0, 0] ));
+    modelView = mult(modelView, rotate(_camera_y, [0, 1, 0] ));
+    modelView = mult(modelView, rotate(_camera_z, [0, 0, 1] ));
 
     gl.uniformMatrix4fv( gl.getUniformLocation(program,
             "modelViewMatrix"), false, flatten(modelView) );
 
-    if (_render_mode == 0) { //wireframe
-        //console.log("rendering wireframe!")
-        gl.drawElements(gl.LINES, indexItems, gl.UNSIGNED_SHORT, 0);
-    } else if (_render_mode == 1){ //fill
-        //console.log("rendering solid object!")
-        gl.drawElements(gl.TRIANGLES, indexItems, gl.UNSIGNED_SHORT, 0);
-    }
+    var runningOffset = 0;
+    for (var i = 0; i < _spheres_index_offsets.length; i++ ) {
 
-    /*
-    var numSpheres = _spheres.length;
-    for ( var i=0; i<numSpheres; i++ ) {
-        gl.drawArrays( gl.TRIANGLES, sphereStartIdx[i], numPointsPerLine[i] );
-    }*/
+        if ( _spheres_type[ i ] == 0 ) {
+            renderSphere(_render_mode, _spheres_index_offsets[i], runningOffset);
+        } else if ( _spheres_type[ i ] == 1 ) {
+            renderCone(_render_mode, _spheres_index_offsets[i], runningOffset);
+        } else if ( _spheres_type[ i ] == 2 ) {
+            renderCylinder(_render_mode, _spheres_index_offsets[i], runningOffset);
+        }
+
+        runningOffset += _spheres_index_offsets[i];
+    }
 
     requestAnimFrame(render);
 }
+
+

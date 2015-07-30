@@ -8,6 +8,7 @@
 <script id="vertex-shader" type="x-shader/x-vertex">
 attribute  vec4 vPosition;
 attribute  vec3 vNormal;
+
 varying vec4 fColor;
 
 //uniform vec4 ambientProduct, diffuseProduct, specularProduct;
@@ -15,6 +16,7 @@ uniform mat4 modelViewMatrix;
 uniform mat4 projectionMatrix;
 //uniform vec4 lightPosition;
 //uniform float shininess;
+uniform vec3 col;
 void main()
 {
 
@@ -51,7 +53,11 @@ void main()
     gl_Position = projectionMatrix * modelViewMatrix * vPosition;
 
     //fColor = ambient + diffuse +specular;
-    fColor.rgb = vNormal; //vec3(1.0, 0.0, 0.0);
+    if (col.r >= 0.0 ) {
+        fColor.rgb = col; //vec3(1.0, 0.0, 0.0);
+    }else{
+        fColor.rgb = vNormal;
+    }
     fColor.a = 1.0;
 }
 </script>
@@ -93,15 +99,15 @@ Oops ... your browser doesn't support the HTML5 canvas element
         </div>
         <br>
         <div>
-            radius:<br>  1 <input id="slider_radius" type="range"
-                                      min="1" max="10" step="1" value="1" />
-            10
+            radius:<br>  0.1 <input id="slider_radius" type="range"
+                                      min="0.1" max="1" step="0.1" value="0.5" />
+            1
         </div>
         <br>
         <div>
-            height:<br>  1 <input id="slider_height" type="range"
-                                  min="1" max="10" step="1" value="1" />
-            10
+            height:<br>  0.1 <input id="slider_height" type="range"
+                                  min="0.1" max="1" step="0.1" value="0.5" />
+            1
         </div>
         <br>
         <input type="checkbox" id="check_show_temp_object">show temp object
@@ -169,21 +175,21 @@ Oops ... your browser doesn't support the HTML5 canvas element
         <b>View:</b><br>&nbsp;
         <br>
         <div>
-            move x:<br>  -1 <input id="slider_camera_x" type="range"
-                                       min="-1" max="1" step="0.1" value="0" />
-            1
+            move x:<br>  -180 <input id="slider_camera_x" type="range"
+                                       min="-180" max="180" step="1" value="0" />
+            180
         </div>
         <br>
         <div>
-            move y:<br>  -1 <input id="slider_camera_y" type="range"
-                                       min="-1" max="1" step="0.1" value="0" />
-            1
+            move y:<br>  -180 <input id="slider_camera_y" type="range"
+                                       min="-180" max="180" step="1" value="0" />
+            180
         </div>
         <br>
         <div>
-            move z:<br>  -1 <input id="slider_camera_z" type="range"
-                                       min="-1" max="1" step="0.1" value="0" />
-            1
+            move z:<br>  -180 <input id="slider_camera_z" type="range"
+                                       min="-180" max="180" step="1" value="0" />
+            180
         </div>
 </div>
 </body>
