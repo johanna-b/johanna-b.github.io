@@ -3,41 +3,15 @@
 var canvas;
 var gl;
 
-
-var lightPosition = vec4(1.0, 1.0, 1.0, 0.0 );
-var lightAmbient = vec4(0.2, 0.2, 0.2, 1.0 );
-var lightDiffuse = vec4( 1.0, 1.0, 1.0, 1.0 );
-var lightSpecular = vec4( 1.0, 1.0, 1.0, 1.0 );
-
-var materialAmbient = vec4( 1.0, 0.0, 1.0, 1.0 );
-var materialDiffuse = vec4( 1.0, 0.8, 0.0, 1.0);
-var materialSpecular = vec4( 1.0, 0.8, 0.0, 1.0 );
-var materialShininess = 100.0;
-
-var ctm;
-var ambientColor, diffuseColor, specularColor;
-
-var modelView, projection;
-var viewerPos;
 var program;
 
-var xAxis = 0;
-var yAxis = 1;
-var zAxis = 2;
-var axis = 0;
-var theta =[0, 0, 0];
+// matrices
+var modelView, projection;
 
-var thetaLoc;
-
-var flag = true;
-
-
-//=============
-
+// objects
 var _obj_type = 0;
 var _obj_radius = 0.5;
 var _obj_height = 0.5;
-var _show_temp_obj = 0;
 
 var _obj_x = 0.0;
 var _obj_y = 0.0;
@@ -47,27 +21,57 @@ var _obj_x_spin = 0.0;
 var _obj_y_spin = 0.0;
 var _obj_z_spin = 0.0;
 
-var _render_mode = 0; //wireframe
-var _render_distance_attenuation = 0;
-
+// camera
 var _camera_x = 0.0;
 var _camera_y = 0.0;
 var _camera_z = 0.0;
 
+// rendering
+var _render_mode = 0; //wireframe
+
+var _render_distance_attenuation = false;
+
+// lighting
+var _light0_enabled = true;
+var _light1_enabled = false;
+var _selected_light = 0;
+var _light_x = 0.0;
+var _light_y = 0.0;
+var _light_z = 0.0;
+
+
+// object helper datastructures
 var _sphere_latitude_bands = 16;
 var _sphere_longitude_bands = 16;
 
-var _spheres_vertices = [];
-var _spheres_normals = [];
-var _spheres_indices = [];
-var _spheres_index_offsets = [];
-var _spheres_type = [];
-var _num_spheres_offset = 0;
+var _object_vertices = [];
+var _object_normals = [];
+var _object_indices = [];
+var _object_index_offsets = [];
+var _object_type = [];
 
-var nBuffer;
-var vBuffer;
-var iBuffer;
+// buffers
+var _normal_buffer;
+var _vertex_buffer;
+var _index_buffer;
 
+// light helper
+var _light_ambient = vec4(0.2, 0.2, 0.2, 1.0 );
+var _light_diffuse = vec4( 1.0, 1.0, 1.0, 1.0 );
+var _light_specular = vec4( 1.0, 1.0, 1.0, 1.0 );
+
+var _material_ambient = vec4( 1.0, 0.0, 1.0, 1.0 );
+var _material_diffuse = vec4( 1.0, 0.8, 0.0, 1.0);
+var _material_specular = vec4( 1.0, 0.8, 0.0, 1.0 );
+var _material_shininess = 100.0;
+
+var _light0_pos = vec4( 0.0, 0.0, 0.0, 0.0 );
+var _light1_pos = vec4( 0.0, 0.0, 0.0, 0.0 );
+
+
+/*
+matrix-vector multiplication
+ */
 function matVecMul( m, v){
 
     var res = vec4();
@@ -78,64 +82,72 @@ function matVecMul( m, v){
             sum += m[m_row][m_col] * v[m_col];
 
         }
-       // console.log("index: ", m_row, "val:", sum);
         res[m_row] = sum;
     }
     return res;
 }
 
-
+/*
+create new object (sphere, cone, cylinder)
+ */
 function createObject()
 {
+    // create geometry
     var arrays = [];
     if ( _obj_type == 0 ) { //sphere
 
         console.log("creating new sphere: r: ", _obj_radius, " xyz: ", _obj_x, _obj_y, _obj_z);
 
         arrays = createSphere(_obj_radius, _obj_x, _obj_y, _obj_z);
-        _spheres_type.push(0);
+        _object_type.push(0);
 
     } else if (_obj_type == 1 ) { //cone
 
         console.log("creating new cone: r: ", _obj_radius, "height:", _obj_height, " xyz: ", _obj_x, _obj_y, _obj_z, "rotation: ", _obj_x_spin, _obj_y_spin, _obj_z_spin );
 
         arrays = createCone(_obj_radius, _obj_height, _obj_x, _obj_y, _obj_z, _obj_x_spin, _obj_y_spin, _obj_z_spin );
-        _spheres_type.push(1);
+        _object_type.push(1);
 
     } else if (_obj_type == 2 ) { //cylinder
 
         console.log("creating new cylinder: r: ", _obj_radius, "height:", _obj_height, " xyz: ", _obj_x, _obj_y, _obj_z, "rotation: ", _obj_x_spin, _obj_y_spin, _obj_z_spin );
 
         arrays = createCylinder(_obj_radius, _obj_height, _obj_x, _obj_y, _obj_z, _obj_x_spin, _obj_y_spin, _obj_z_spin );
-        _spheres_type.push(2);
+        _object_type.push(2);
 
     }
 
-    _spheres_vertices = _spheres_vertices.concat(arrays[0]);
-    _spheres_normals = _spheres_normals.concat(arrays[1]);
-    _spheres_indices = _spheres_indices.concat(arrays[2]);
+    // add object geometry to arrays of previous geometry
+    _object_vertices = _object_vertices.concat(arrays[0]);
+    _object_normals = _object_normals.concat(arrays[1]);
+    _object_indices = _object_indices.concat(arrays[2]);
 
-    gl.bindBuffer(gl.ARRAY_BUFFER, nBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, flatten(_spheres_normals), gl.STATIC_DRAW);
+    // download arrays to buffers
+    gl.bindBuffer(gl.ARRAY_BUFFER, _normal_buffer);
+    gl.bufferData(gl.ARRAY_BUFFER, flatten(_object_normals), gl.STATIC_DRAW);
 
-    gl.bindBuffer(gl.ARRAY_BUFFER, vBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, flatten(_spheres_vertices), gl.STATIC_DRAW);
+    gl.bindBuffer(gl.ARRAY_BUFFER, _vertex_buffer);
+    gl.bufferData(gl.ARRAY_BUFFER, flatten(_object_vertices), gl.STATIC_DRAW);
 
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, iBuffer);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(_spheres_indices), gl.STATIC_DRAW);
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, _index_buffer);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(_object_indices), gl.STATIC_DRAW);
+    _index_buffer.numItems = _object_indices.length;
 
-    iBuffer.numItems = _spheres_indices.length;
-
-    _spheres_index_offsets.push(arrays[2].length);
+    // save offset
+    _object_index_offsets.push(arrays[2].length);
 
 }
 
+/*
+create sphere geometry, given point and radius
+ */
 function createSphere(radius, xpos, ypos, zpos)
 {
     var vertarray = [];
     var normarray = [];
     var indexarray = [];
 
+    // create vertices
     for (var latNumber = 0; latNumber <= _sphere_latitude_bands; latNumber++) {
         var theta = latNumber * Math.PI / _sphere_latitude_bands;
         var sinTheta = Math.sin(theta);
@@ -161,8 +173,9 @@ function createSphere(radius, xpos, ypos, zpos)
         }
     }
 
-    var index_offset = _spheres_vertices.length;
+    var index_offset = _object_vertices.length;
 
+    // create index array for triangles
     for (var latNumber = 0; latNumber < _sphere_latitude_bands; latNumber++) {
         for (var longNumber = 0; longNumber < _sphere_longitude_bands; longNumber++) {
 
@@ -186,20 +199,24 @@ function createSphere(radius, xpos, ypos, zpos)
 
 }
 
+/*
+create cone given point, radius, height, rotation
+ */
 function createCone(radius, height, xpos, ypos, zpos, xrot, yrot, zrot)
 {
     var vertarray = [];
     var normarray = [];
     var indexarray = [];
 
-    //center
+    //center vertex
     vertarray.push(vec4(0.0, 0.0, 0.0,1.0));
     normarray.push(vec3(0.0, 0.0, 1.0));
 
-    //top
+    //top vertex
     vertarray.push(vec4(0.0, 0.0,-height,1.0));
     normarray.push(vec3(0.0, 0.0,-1.0));
 
+    // create cone vertices (flat bottom)
     for (var longNumber = 0; longNumber <= _sphere_longitude_bands; longNumber++) {
         var phi = longNumber * 2 * Math.PI / _sphere_longitude_bands;
         var sinPhi = Math.sin(phi);
@@ -220,35 +237,33 @@ function createCone(radius, height, xpos, ypos, zpos, xrot, yrot, zrot)
 
     }
 
-    var index_offset = _spheres_vertices.length;
+    var index_offset = _object_vertices.length;
 
-    // cone
+    // create indices of cone
     for (var longNumber = 0; longNumber < _sphere_longitude_bands; longNumber++) {
 
         var first = (index_offset + 2) + longNumber;
         var top = index_offset + 1;
 
-        // indices for first triangle
         indexarray.push(first);
         indexarray.push(first + 1);
         indexarray.push(top);
 
     }
 
-    // flat bottom
+    // create indices of flat bottom
     for (var longNumber = 0; longNumber < _sphere_longitude_bands; longNumber++) {
 
         var first = (index_offset + 2) + longNumber;
         var center = index_offset;
 
-        // indices for first triangle
         indexarray.push(first);
         indexarray.push(first + 1);
         indexarray.push(center);
 
     }
 
-    // transformation
+    // transformation (translation + rotation)
     //+t/R/-t/T
 
     // rotation
@@ -278,20 +293,24 @@ function createCone(radius, height, xpos, ypos, zpos, xrot, yrot, zrot)
     return [vertarray, normarray, indexarray];
 }
 
+/*
+create cylinder geometry
+ */
 function createCylinder(radius, height, xpos, ypos, zpos, xrot, yrot, zrot)
 {
     var vertarray = [];
     var normarray = [];
     var indexarray = [];
 
-    //todo: rotate
-
+    // bottom center vertex
     vertarray.push(vec4(0.0, 0.0, 0.0, 1.0));
     normarray.push(vec3(0.0, 0.0, 1.0));
 
+    // top center vertex
     vertarray.push(vec4(0.0, 0.0, -height,1.0));
     normarray.push(vec3(0.0, 0.0, -1.0));
 
+    // create geometry for bottom and top disk
     for ( var discNumber = 0; discNumber < 2; ++discNumber) {
         var heightoffset = -discNumber * height;
         for (var longNumber = 0; longNumber <= _sphere_longitude_bands; longNumber++) {
@@ -317,28 +336,26 @@ function createCylinder(radius, height, xpos, ypos, zpos, xrot, yrot, zrot)
         }
     }
 
-    var index_offset = _spheres_vertices.length;
+    var index_offset = _object_vertices.length;
 
     var center_bottom = index_offset;
     var center_top = index_offset+1;
 
-    //bottom
+    // indices of cylinder bottom
     for (var longNumber = 0; longNumber < _sphere_longitude_bands; longNumber++) {
 
         var first = (index_offset + 2) + longNumber;
 
-        // indices for first triangle
         indexarray.push(first);
         indexarray.push(first + 1);
         indexarray.push(center_bottom);
     }
 
-    //top
+    // indices of cylinder top
     for (var longNumber = 0; longNumber < _sphere_longitude_bands; ++longNumber) {
 
         var first = (index_offset + 2) + longNumber + _sphere_longitude_bands+1;
 
-        // indices for first triangle
         indexarray.push(first + 1);
         indexarray.push(first);
         indexarray.push(center_top);
@@ -346,7 +363,7 @@ function createCylinder(radius, height, xpos, ypos, zpos, xrot, yrot, zrot)
         console.log(center_top, first, first+1);
     }
 
-    //walls
+    // indices for cylinder side walls
     for (var longNumber = 0; longNumber < _sphere_longitude_bands; longNumber++) {
 
         var first = (index_offset + 2) + longNumber;
@@ -360,8 +377,7 @@ function createCylinder(radius, height, xpos, ypos, zpos, xrot, yrot, zrot)
         // indices for second triangle
         indexarray.push(second);
         indexarray.push(second + 1);
-        indexarray.push(first + 1); 
-
+        indexarray.push(first + 1);
     }
 
     // transformation
@@ -395,15 +411,28 @@ function createCylinder(radius, height, xpos, ypos, zpos, xrot, yrot, zrot)
 }
 
 
-function addLight()
+/*
+ selected light's position
+ */
+function updateLight()
 {
-    //todo
-    console.log("creating new light source!")
+    //console.log("updating light source!")
+    if ( _selected_light == 0 ) {
+        _light0_pos = vec4( _light_x, _light_y, _light_z, 0.0 );
+    } else if ( _selected_light == 1 ) {
+        _light1_pos = vec4( _light_x, _light_y, _light_z, 0.0 );
+    }
+
+    //console.log("light: ", _light0_pos );
+
 }
 
 
-
+/*
+init function
+ */
 window.onload = function init() {
+
     canvas = document.getElementById( "gl-canvas" );
 
     gl = WebGLUtils.setupWebGL( canvas );
@@ -415,45 +444,39 @@ window.onload = function init() {
     gl.enable(gl.DEPTH_TEST);
 
     // ================
-    //  Load shaders and initialize attribute buffers
+    //  load shaders and initialize attribute buffers
 
     program = initShaders( gl, "vertex-shader", "fragment-shader" );
     gl.useProgram( program );
 
     // normal buffer
-    nBuffer = gl.createBuffer();
-    gl.bindBuffer( gl.ARRAY_BUFFER, nBuffer );
-    gl.bufferData( gl.ARRAY_BUFFER, flatten(_spheres_normals), gl.STATIC_DRAW );
+    _normal_buffer = gl.createBuffer();
+    gl.bindBuffer( gl.ARRAY_BUFFER, _normal_buffer );
+    gl.bufferData( gl.ARRAY_BUFFER, flatten(_object_normals), gl.STATIC_DRAW );
 
     var vNormal = gl.getAttribLocation( program, "vNormal" );
     gl.vertexAttribPointer( vNormal, 3, gl.FLOAT, false, 0, 0 );
     gl.enableVertexAttribArray( vNormal );
 
     // vertex buffer
-    vBuffer = gl.createBuffer();
-    gl.bindBuffer( gl.ARRAY_BUFFER, vBuffer );
-    gl.bufferData( gl.ARRAY_BUFFER, flatten(_spheres_vertices), gl.STATIC_DRAW );
+    _vertex_buffer = gl.createBuffer();
+    gl.bindBuffer( gl.ARRAY_BUFFER, _vertex_buffer );
+    gl.bufferData( gl.ARRAY_BUFFER, flatten(_object_vertices), gl.STATIC_DRAW );
 
     var vPosition = gl.getAttribLocation(program, "vPosition");
     gl.vertexAttribPointer(vPosition, 4, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(vPosition);
 
     // vertex index buffer
-    iBuffer = gl.createBuffer();
-    gl.bindBuffer( gl.ELEMENT_ARRAY_BUFFER, iBuffer );
-    gl.bufferData( gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(_spheres_indices), gl.STATIC_DRAW );
-    iBuffer.itemSize = 1;
-    iBuffer.numItems = _spheres_indices.length;
+    _index_buffer = gl.createBuffer();
+    gl.bindBuffer( gl.ELEMENT_ARRAY_BUFFER, _index_buffer );
+    gl.bufferData( gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(_object_indices), gl.STATIC_DRAW );
+    _index_buffer.itemSize = 1;
+    _index_buffer.numItems = _object_indices.length;
 
     // set up camera and projection matrix
 
-    viewerPos = vec3(0.0, 0.0, -20.0 );
-
     projection = ortho(-1.5, 1.5, -1.5, 1.5, -100, 100);
-
-    //var ambientProduct = mult(lightAmbient, materialAmbient);
-    //var diffuseProduct = mult(lightDiffuse, materialDiffuse);
-    //var specularProduct = mult(lightSpecular, materialSpecular);
 
     // ================
     // link GUI items
@@ -477,98 +500,117 @@ window.onload = function init() {
 
     document.getElementById("button_add_object").onclick = function(){createObject()};
 
-    document.getElementById("menu_render_mode").onclick = function(){
-        _render_mode = document.getElementById("menu_render_mode").selectedIndex;
-    };
-
-    document.getElementById("button_add_light").onclick = function(){addLight()};
-
-    document.getElementById("check_use_distance_attenuation").onclick = function() {_render_distance_attenuation = document.getElementById('check_use_distance_attenuation').checked;};
-
     document.getElementById("slider_camera_x").onchange = function(){_camera_x = parseFloat(event.srcElement.value);};
     document.getElementById("slider_camera_y").onchange = function(){_camera_y = parseFloat(event.srcElement.value);};
     document.getElementById("slider_camera_z").onchange = function(){_camera_z = parseFloat(event.srcElement.value);};
 
+    document.getElementById("menu_render_mode").onclick = function(){
+        _render_mode = document.getElementById("menu_render_mode").selectedIndex;
+    };
+
+    document.getElementById("check_use_distance_attenuation").onclick = function() {_render_distance_attenuation = document.getElementById('check_use_distance_attenuation').checked;};
+
+    document.getElementById("light0").onclick = function(){_light0_enabled = document.getElementById("light0").checked};
+    document.getElementById("light1").onclick = function(){_light1_enabled = document.getElementById("light1").checked};
+
+    document.getElementById("selected_light").onclick = function(){
+        _selected_light = document.getElementById("selected_light").selectedIndex;
+    };
+
+    document.getElementById("light_x").onchange = function(){_light_x = parseFloat(event.srcElement.value);};
+    document.getElementById("light_y").onchange = function(){_light_y = parseFloat(event.srcElement.value);};
+    document.getElementById("light_z").onchange = function(){_light_z = parseFloat(event.srcElement.value);};
+
+    document.getElementById("light_x").oninput = function(){
+        _light_x = parseFloat(event.srcElement.value);
+        updateLight();
+    };
+    document.getElementById("light_y").oninput = function(){
+        _light_y = parseFloat(event.srcElement.value);
+        updateLight();
+    };
+    document.getElementById("light_z").oninput = function(){
+        _light_z = parseFloat(event.srcElement.value);
+        updateLight();
+    };
+
+    document.getElementById("button_update_light").onclick = function(){updateLight()};
+
     // ===============
     // set uniforms
 
-    //thetaLoc = gl.getUniformLocation(program, "theta");
+    // lighting
+    var ambientProduct = mult(_light_ambient, _material_ambient);
+    var diffuseProduct = mult(_light_diffuse, _material_diffuse);
+    var specularProduct = mult(_light_specular, _material_specular);
 
-/*
     gl.uniform4fv(gl.getUniformLocation(program, "ambientProduct"),
-       flatten(ambientProduct));
+        flatten(ambientProduct));
     gl.uniform4fv(gl.getUniformLocation(program, "diffuseProduct"),
-       flatten(diffuseProduct) );
+        flatten(diffuseProduct) );
     gl.uniform4fv(gl.getUniformLocation(program, "specularProduct"),
-       flatten(specularProduct) );
-    gl.uniform4fv(gl.getUniformLocation(program, "lightPosition"),
-       flatten(lightPosition) );
+        flatten(specularProduct) );
 
     gl.uniform1f(gl.getUniformLocation(program,
-       "shininess"),materialShininess);
-       */
+        "shininess"),_material_shininess);
 
+    // projection matrix
     gl.uniformMatrix4fv( gl.getUniformLocation(program, "projectionMatrix"),
        false, flatten(projection));
 
     render();
 }
 
+/*
+helper function that draws an object given it's geometry
+ */
+function _renderObject(rendermode, offset_index, running_offset )
+{
+    if (_render_mode == 0) { //wireframe
+        gl.uniform3fv(gl.getUniformLocation(program, "col"), flatten(vec3(1.0, 1.0, 1.0)));
+        gl.drawElements(gl.TRIANGLES, offset_index, gl.UNSIGNED_SHORT, running_offset * 2);
 
+        gl.uniform3fv(gl.getUniformLocation(program, "col"), flatten(vec3(0.0, 0.0, 0.0)));
+        gl.drawElements(gl.LINE_LOOP, offset_index, gl.UNSIGNED_SHORT, running_offset * 2); //offset*sizeof(unsigned_short)
+
+    } else if (_render_mode == 1) { //fill
+
+        gl.uniform3fv(gl.getUniformLocation(program, "col"), flatten(vec3(-1.0, -1.0, -1.0)));
+        gl.drawElements(gl.TRIANGLES, offset_index, gl.UNSIGNED_SHORT, running_offset*2);
+
+    } else if (_render_mode == 2) { //shaded
+        gl.uniform3fv(gl.getUniformLocation(program, "col"), flatten(vec3(-1.0, -1.0, -1.0)));
+        gl.drawElements(gl.TRIANGLES, offset_index, gl.UNSIGNED_SHORT, running_offset*2);
+    }
+}
+
+/*
+draws a sphere for given sphere geometry
+ */
 function renderSphere(rendermode, offset_index, running_offset )
 {
-
-    if (_render_mode == 0) { //wireframe
-        gl.uniform3fv(gl.getUniformLocation(program, "col"), flatten(vec3(1.0, 1.0, 1.0)));
-        gl.drawElements(gl.TRIANGLES, offset_index, gl.UNSIGNED_SHORT, running_offset * 2);
-
-        gl.uniform3fv(gl.getUniformLocation(program, "col"), flatten(vec3(0.0, 0.0, 0.0)));
-        gl.drawElements(gl.LINE_LOOP, offset_index, gl.UNSIGNED_SHORT, running_offset * 2); //offset*sizeof(unsigned_short)
-
-    } else if (_render_mode == 1) { //fill
-
-        gl.uniform3fv(gl.getUniformLocation(program, "col"), flatten(vec3(-1.0, -1.0, -1.0)));
-        gl.drawElements(gl.TRIANGLES, offset_index, gl.UNSIGNED_SHORT, running_offset*2);
-    }
-
+    _renderObject(rendermode, offset_index, running_offset);
 }
 
+/*
+ draws a cone for given sphere geometry
+ */
 function renderCone(rendermode, offset_index, running_offset )
 {
-
-    if (_render_mode == 0) { //wireframe
-        gl.uniform3fv(gl.getUniformLocation(program, "col"), flatten(vec3(1.0, 1.0, 1.0)));
-        gl.drawElements(gl.TRIANGLES, offset_index, gl.UNSIGNED_SHORT, running_offset * 2);
-
-        gl.uniform3fv(gl.getUniformLocation(program, "col"), flatten(vec3(0.0, 0.0, 0.0)));
-        gl.drawElements(gl.LINE_LOOP, offset_index, gl.UNSIGNED_SHORT, running_offset * 2); //offset*sizeof(unsigned_short)
-
-    } else if (_render_mode == 1) { //fill
-
-        gl.uniform3fv(gl.getUniformLocation(program, "col"), flatten(vec3(-1.0, -1.0, -1.0)));
-        gl.drawElements(gl.TRIANGLES, offset_index, gl.UNSIGNED_SHORT, running_offset*2);
-    }
-
+    _renderObject(rendermode, offset_index, running_offset);
 }
 
+/*
+ draws a cylinder for given sphere geometry
+ */
 function renderCylinder(rendermode, offset_index, running_offset )
 {
-
-    if (_render_mode == 0) { //wireframe
-        gl.uniform3fv(gl.getUniformLocation(program, "col"), flatten(vec3(1.0, 1.0, 1.0)));
-        gl.drawElements(gl.TRIANGLES, offset_index, gl.UNSIGNED_SHORT, running_offset * 2);
-
-        gl.uniform3fv(gl.getUniformLocation(program, "col"), flatten(vec3(0.0, 0.0, 0.0)));
-        gl.drawElements(gl.LINE_LOOP, offset_index, gl.UNSIGNED_SHORT, running_offset * 2); //offset*sizeof(unsigned_short)
-
-    } else if (_render_mode == 1) { //fill
-
-        gl.uniform3fv(gl.getUniformLocation(program, "col"), flatten(vec3(-1.0, -1.0, -1.0)));
-        gl.drawElements(gl.TRIANGLES, offset_index, gl.UNSIGNED_SHORT, running_offset*2);
-    }
-
+    _renderObject(rendermode, offset_index, running_offset);
 }
 
+/*
+render function
+ */
 var render = function(){
 
     gl.clearColor(0.8, 0.8, 0.8, 1.0);
@@ -587,18 +629,32 @@ var render = function(){
     gl.uniformMatrix4fv( gl.getUniformLocation(program,
             "modelViewMatrix"), false, flatten(modelView) );
 
-    var runningOffset = 0;
-    for (var i = 0; i < _spheres_index_offsets.length; i++ ) {
+    var lights_on = [   (_render_mode==2)?1.0:0.0,
+                        _light0_enabled?1.0:0.0,
+                        _light1_enabled?1.0:0.0,
+                        _render_distance_attenuation?1.0:0.0];
 
-        if ( _spheres_type[ i ] == 0 ) {
-            renderSphere(_render_mode, _spheres_index_offsets[i], runningOffset);
-        } else if ( _spheres_type[ i ] == 1 ) {
-            renderCone(_render_mode, _spheres_index_offsets[i], runningOffset);
-        } else if ( _spheres_type[ i ] == 2 ) {
-            renderCylinder(_render_mode, _spheres_index_offsets[i], runningOffset);
+    gl.uniform4fv(gl.getUniformLocation(program,
+        "lights_enabled"),flatten(lights_on));
+
+    gl.uniform4fv(gl.getUniformLocation(program, "lightPos0"),
+        flatten(_light0_pos) );
+    gl.uniform4fv(gl.getUniformLocation(program, "lightPos1"),
+        flatten(_light1_pos) );
+
+    // render objects
+    var runningOffset = 0;
+    for (var i = 0; i < _object_index_offsets.length; i++ ) {
+
+        if ( _object_type[ i ] == 0 ) {
+            renderSphere(_render_mode, _object_index_offsets[i], runningOffset);
+        } else if ( _object_type[ i ] == 1 ) {
+            renderCone(_render_mode, _object_index_offsets[i], runningOffset);
+        } else if ( _object_type[ i ] == 2 ) {
+            renderCylinder(_render_mode, _object_index_offsets[i], runningOffset);
         }
 
-        runningOffset += _spheres_index_offsets[i];
+        runningOffset += _object_index_offsets[i];
     }
 
     requestAnimFrame(render);

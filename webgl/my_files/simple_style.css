@@ -6,7 +6,7 @@
 }
 .first {
     width: 200px;
-    height: 350px;
+    height: 420px;
     padding: 1em;
     float:left; /* add this */
     border: 1px solid gray;
@@ -14,4 +14,8 @@
 .second {
     border: 1px solid green;
     overflow: hidden; /* if you don't want #second to wrap below #first */
+}
+
+.internal {
+    float:left;
 }

@@ -11,54 +11,86 @@ attribute  vec3 vNormal;
 
 varying vec4 fColor;
 
-//uniform vec4 ambientProduct, diffuseProduct, specularProduct;
+// matrices
 uniform mat4 modelViewMatrix;
 uniform mat4 projectionMatrix;
-//uniform vec4 lightPosition;
-//uniform float shininess;
+
+// lighting params
+uniform vec4 ambientProduct, diffuseProduct, specularProduct;
+uniform float shininess;
+
+uniform vec4 lightPos0;
+uniform vec4 lightPos1;
+
+uniform vec4 lights_enabled; // lighting enabled, light0 on, light1 on, distance_attenuation
+
 uniform vec3 col;
+
+vec4 computeLighting(vec4 lightPos, float enabled)
+{
+    if ( enabled <= 0.0 ) {
+        vec4 ambient = ambientProduct;
+        return ambient;
+    } else {
+
+        vec3 pos = (modelViewMatrix * vPosition).xyz;
+        vec3 light = lightPos.xyz;
+
+        vec3 L = normalize( light - pos );
+
+        vec3 E = normalize( -pos );
+        vec3 H = normalize( L + E );
+
+        vec4 NN = vec4(vNormal,0);
+
+        // Transform vertex normal into eye coordinates
+
+        vec3 N = normalize( (modelViewMatrix*NN).xyz);
+
+        // Compute terms in the illumination equation
+        vec4 ambient = ambientProduct;
+
+        float Kd = max( dot(L, N), 0.0 );
+        vec4  diffuse = Kd*diffuseProduct;
+
+        float Ks = pow( max(dot(N, H), 0.0), shininess );
+        vec4  specular = Ks * specularProduct;
+
+        if( dot(L, N) < 0.0 ) {
+            specular = vec4(0.0, 0.0, 0.0, 1.0);
+        }
+
+        if ( lights_enabled.w >= 1.0 ) {
+            float light_attenuation = 0.1;
+            vec3 surfacePos = vec3(modelViewMatrix * vPosition);
+            float distanceToLight = length(lightPos.xyz - surfacePos.xyz);
+            float attenuation = 1.0 / (1.0 + light_attenuation * (distanceToLight * distanceToLight));
+            vec4 linearColor = ambient + attenuation*(diffuse + specular);
+            return linearColor;
+        }
+
+        return (ambient + diffuse + specular);
+    }
+}
+
+
 void main()
 {
 
-    
-    /*
-    vec3 pos = -(modelViewMatrix * vPosition).xyz;
-    vec3 light = lightPosition.xyz;
-    vec3 L = normalize( light - pos );
+    if (lights_enabled.x >= 1.0){
+        fColor = computeLighting(lightPos0, lights_enabled.y);
+        fColor = fColor + computeLighting(lightPos1, lights_enabled.z);
+    } else {
 
-	
-    vec3 E = normalize( -pos );
-    vec3 H = normalize( L + E );
-    
-    vec4 NN = vec4(vNormal,0);
-
-    // Transform vertex normal into eye coordinates
-       
-    vec3 N = normalize( (modelViewMatrix*NN).xyz);
-
-    // Compute terms in the illumination equation
-    vec4 ambient = ambientProduct;
-
-    float Kd = max( dot(L, N), 0.0 );
-    vec4  diffuse = Kd*diffuseProduct;
-
-    float Ks = pow( max(dot(N, H), 0.0), shininess );
-    vec4  specular = Ks * specularProduct;
-    
-    if( dot(L, N) < 0.0 ) {
-	specular = vec4(0.0, 0.0, 0.0, 1.0);
-    }
-    */
-
-    gl_Position = projectionMatrix * modelViewMatrix * vPosition;
-
-    //fColor = ambient + diffuse +specular;
-    if ( col.r >= 0.0 ) {
-        fColor.rgb = col; //vec3(1.0, 0.0, 0.0);
-    }else{
-        fColor.rgb = vNormal;
+        if ( col.r >= 0.0 ) {
+            fColor.rgb = col;
+        }else{
+            fColor.rgb = vNormal;
+        }
     }
     fColor.a = 1.0;
+
+    gl_Position = projectionMatrix * modelViewMatrix * vPosition;
 }
 </script>
 
@@ -157,21 +189,6 @@ Oops ... your browser doesn't support the HTML5 canvas element
     </div>
 
     <div class="first">
-        <b>Rendering/Lighting:</b><br>&nbsp;
-        <br>
-        render mode:<br>
-        <select id = "menu_render_mode" size = "3">
-            <option value = "0" selected="selected" >Wireframe</option>
-            <option value = "1">Flat Fill</option>
-            <option value = "2">Phong shaded</option>
-        </select>
-        <br><br>
-        <button id = "button_add_light">add moving light source</button>
-        <br><br>
-        <input type="checkbox" id="check_use_distance_attenuation"> enable distance attenuation
-    </div>
-
-    <div class="first">
         <b>View:</b><br>&nbsp;
         <br>
         <div>
@@ -191,6 +208,54 @@ Oops ... your browser doesn't support the HTML5 canvas element
                                        min="-180" max="180" step="1" value="0" />
             180
         </div>
+    </div>
+
+    <div class="first">
+        <b>Rendering/Lighting:</b><br>&nbsp;
+        <br>
+        render mode:<br>
+        <select id = "menu_render_mode" size = "3">
+            <option value = "0" selected="selected" >Wireframe</option>
+            <option value = "1">Flat Fill</option>
+            <option value = "2">Phong shaded</option>
+        </select>
+        <br><br>
+
+        <input type="checkbox" id="check_use_distance_attenuation"> enable distance attenuation
+        <br>
+        <input type="checkbox" id="light0" checked> enable light 1
+        <br>
+        <input type="checkbox" id="light1"> enable light 2
+
+        <br><br>
+        current light:<br>
+        <select id = "selected_light" size = "3">
+            <option value = "0" selected="selected" >light 1</option>
+            <option value = "1">light 2</option>
+        </select>
+        <br><br>
+
+        <div>
+            x dir:<br>  -5 <input id="light_x" type="range"
+                                       min="-5" max="5" step="1" value="0" />
+            5
+        </div>
+        <div>
+            y dir:<br>  -5 <input id="light_y" type="range"
+                                       min="-5" max="5" step="1" value="0" />
+            5
+        </div>
+        <div>
+            z dir:<br>  -5 <input id="light_z" type="range"
+                                       min="-5" max="5" step="1" value="0" />
+            5
+        </div>
+        <br>
+        <button id = "button_update_light">update current light position</button>
+        <br>
+
+    </div>
+
 </div>
 </body>
 </html>
