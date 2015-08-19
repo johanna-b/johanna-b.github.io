@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" type="text/css" href="simple_style.css">
+</head>
+
+
+<script id="vertex-shader" type="x-shader/x-vertex">
+attribute  vec4 vPosition;
+attribute  vec3 vNormal;
+attribute  vec2 vTexCoord;
+
+varying vec4 fColor;
+varying vec2 fTexCoord;
+
+// matrices
+uniform mat4 modelViewMatrix;
+uniform mat4 projectionMatrix;
+
+uniform vec3 col;
+
+
+void main()
+{
+
+
+    if ( col.r >= 0.0 ) {
+        fColor.rgb = col;
+    }else{
+        fColor.rgb = vNormal;
+    }
+
+    fColor.a = 1.0;
+
+    fTexCoord = vTexCoord;
+
+    gl_Position = projectionMatrix * modelViewMatrix * vPosition;
+}
+</script>
+
+<script id="fragment-shader" type="x-shader/x-fragment">
+
+precision mediump float;
+
+
+varying vec4 fColor;
+varying  vec2 fTexCoord;
+
+uniform sampler2D Tex0;
+
+void
+main()
+{
+    gl_FragColor = texture2D(Tex0, fTexCoord);
+    //gl_FragColor = fColor;
+}
+</script>
+
+<script type="text/javascript" src="../Common/webgl-utils.js"></script>
+<script type="text/javascript" src="../Common/initShaders.js"></script>
+<script type="text/javascript" src="../Common/MV.js"></script>
+<script type="text/javascript" src="textured_sphere.js"></script>
+
+<body>
+<canvas id="gl-canvas" width="512" height="512">
+Oops ... your browser doesn't support the HTML5 canvas element
+</canvas>
+<div class="wrapper">
+
+    <div class="first">
+        <b>Texture:</b><br>&nbsp;
+        <br>
+        <div>
+            object:<br>
+            <select id = "menu_texture_type" size = "2">
+                <option value = "0" selected="selected">checkerboard</option>
+                <option value = "1">image</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="first">
+        <b>Rotation:</b><br>&nbsp;
+       <br>
+        <div>
+            x:<br>  -180 <input id="slider_x_spin" type="range"
+                                       min="-180" max="180" step="5" value="0" />
+            180
+        </div>
+
+        <div>
+            y:<br>  -180 <input id="slider_y_spin" type="range"
+                                            min="-180" max="180" step="5" value="0" />
+            180
+        </div>
+
+        <div>
+            z:<br>  -180 <input id="slider_z_spin" type="range"
+                                            min="-180" max="180" step="5" value="0" />
+            180
+        </div>
+        <br>
+
+    </div>
+
+
+</div>
+</body>
+</html>
