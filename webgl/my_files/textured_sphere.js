@@ -9,8 +9,7 @@ var program;
 var modelView, projection;
 
 // objects
-var _obj_radius = 0.5;
-var _obj_height = 0.5;
+var _obj_radius = 0.99;
 
 var _obj_x = 0.0;
 var _obj_y = 0.0;
@@ -20,15 +19,9 @@ var _obj_x_spin = 0.0;
 var _obj_y_spin = 0.0;
 var _obj_z_spin = 0.0;
 
-// camera
-var _camera_x = 0.0;
-var _camera_y = 0.0;
-var _camera_z = 0.0;
-
-
 // object helper datastructures
-var _sphere_latitude_bands = 16;
-var _sphere_longitude_bands = 16;
+var _sphere_latitude_bands = 64;
+var _sphere_longitude_bands = 64;
 
 var _object_vertices = [];
 var _object_normals = [];
@@ -45,14 +38,20 @@ var _num_elems = 0;
 
 // texturing
 
-var _texture_type = 0;
+var _texture_type = 0.0;
 
 var _tex_array_checkerboard;
 
 var _tex_checkerboard;
+var _tex_image;
 
 var _tex_height = 64;
 var _tex_width = 64;
+
+var _img_width = 0;
+var _img_height = 0;
+
+var _img;
 
 /*
 matrix-vector multiplication
@@ -175,7 +174,6 @@ function createSphere(radius, xpos, ypos, zpos)
         }
     }
 
-
     return [vertarray, normarray, indexarray, texarray];
 }
 
@@ -188,6 +186,15 @@ function configureTexture() {
     gl.bindTexture( gl.TEXTURE_2D, _tex_checkerboard );
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, _tex_width, _tex_height , 0, gl.RGBA, gl.UNSIGNED_BYTE, _tex_array_checkerboard);
+    gl.generateMipmap( gl.TEXTURE_2D );
+    gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER,
+        gl.NEAREST_MIPMAP_LINEAR );
+    gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+
+    _tex_image = gl.createTexture();
+    gl.bindTexture( gl.TEXTURE_2D, _tex_image );
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, _img);
     gl.generateMipmap( gl.TEXTURE_2D );
     gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER,
         gl.NEAREST_MIPMAP_LINEAR );
@@ -222,6 +229,22 @@ function makeCheckerboard()
 init function
  */
 window.onload = function init() {
+
+    _img = new Image();
+    _img.src = "http://johanna-b.github.io/webgl/my_files/tc-earth_daymap.jpg";
+   // _img.src = "http://localhost:63343/webgl/my_files/tc-earth_daymap.jpg";  // MUST BE SAME DOMAIN!!!
+    _img.onload = function () {
+        console.log("texture image loaded.");
+
+        _img_width = this.width;
+        _img_height = this.height;
+
+        generalInit();
+    }
+}
+
+
+var generalInit = function(){
 
     canvas = document.getElementById( "gl-canvas" );
 
@@ -281,6 +304,10 @@ window.onload = function init() {
     gl.bindTexture( gl.TEXTURE_2D, _tex_checkerboard );
     gl.uniform1i(gl.getUniformLocation( program, "Tex0"), 0);
 
+    gl.activeTexture( gl.TEXTURE1 );
+    gl.bindTexture( gl.TEXTURE_2D, _tex_image );
+    gl.uniform1i(gl.getUniformLocation( program, "Tex1"), 1);
+
 
     // set up camera and projection matrix
 
@@ -291,6 +318,7 @@ window.onload = function init() {
 
     document.getElementById("menu_texture_type").onclick = function(){
         _texture_type = document.getElementById("menu_texture_type").selectedIndex;
+        render();
     };
 
 
@@ -315,11 +343,7 @@ window.onload = function init() {
     // ===============
     // set uniforms
 
-    //gl.uniform4fv(gl.getUniformLocation(program, "ambientProduct"),
-    //    flatten(ambientProduct));
-
-    //gl.uniform1f(gl.getUniformLocation(program,
-    //    "shininess"),_material_shininess);
+    gl.uniform1f(gl.getUniformLocation(program, "TexType"),_texture_type);
 
     // projection matrix
     gl.uniformMatrix4fv( gl.getUniformLocation(program, "projectionMatrix"),
@@ -327,6 +351,7 @@ window.onload = function init() {
 
     render();
 }
+
 
 
 
@@ -353,6 +378,8 @@ var render = function(){
 
     // render object
     gl.uniform3fv(gl.getUniformLocation(program, "col"), flatten(vec3(-1.0, -1.0, -1.0)));
+
+    gl.uniform1f(gl.getUniformLocation(program, "TexType"),_texture_type);
 
     gl.drawElements(gl.TRIANGLES, _num_elems, gl.UNSIGNED_SHORT, 0);
 

@@ -13,6 +13,7 @@ attribute  vec2 vTexCoord;
 varying vec4 fColor;
 varying vec2 fTexCoord;
 
+
 // matrices
 uniform mat4 modelViewMatrix;
 uniform mat4 projectionMatrix;
@@ -47,11 +48,19 @@ varying vec4 fColor;
 varying  vec2 fTexCoord;
 
 uniform sampler2D Tex0;
+uniform sampler2D Tex1;
+
+uniform float TexType;
 
 void
 main()
 {
-    gl_FragColor = texture2D(Tex0, fTexCoord);
+    if ( TexType < 1.0 ) {
+        gl_FragColor = texture2D(Tex0, fTexCoord);
+    } else {
+        gl_FragColor = texture2D(Tex1, fTexCoord);
+    }
+    //gl_FragColor = texture2D(Tex1, fTexCoord);
     //gl_FragColor = fColor;
 }
 </script>
