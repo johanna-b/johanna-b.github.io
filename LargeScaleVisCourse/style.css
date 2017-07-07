@@ -1,0 +1,99 @@
+body  
+{
+    margin:0px;
+    padding:0px;
+    background-color:#FFFFFF;
+    background-repeat:no-repeat;
+    background-position:center center;
+    background-attachment:fixed;
+    font-family: Calibri, Helvetica;
+    text-align:justify;
+}
+
+
+div.content
+{
+    margin-top:8px;
+    margin-left:auto; 
+    margin-right:auto;
+    padding-left:64px;
+    padding-right:64px;
+    padding-top:32px;
+    padding-bottom:32px;
+    width:800px;
+    background-color:#FFFFFF;
+    border-style:solid;
+    border-width:1px;
+    border-color:#000000;
+    text-align:justify;
+}
+
+div.content_second
+{
+    margin-top:16px;
+    margin-left:auto; 
+    margin-right:auto;
+    padding-left:32px;
+    padding-right:32px;
+    padding-top:4px;
+    padding-bottom:16px;
+    width:736px;
+    text-align:justify;
+}
+
+div.color1
+{
+  background-color:#EDEDF3;
+}
+div.color2
+{
+  background-color:#C9C9DC;
+}
+
+h1{ 
+  color: #4A4A8A;
+  text-align:center;
+}
+
+h2{ 
+  color: #4A4A8A;
+}
+
+h4{ 
+  color: #000000;
+  text-align:left;
+  margin-bottom: 0; 
+  padding-bottom: 0;
+}
+
+p
+{
+    text-align:justify;     
+}
+
+a
+{
+    color:#4A4A8A;   
+}
+
+.talk_title {
+    font-size:120%;
+    font-weight:bold;
+    text-align:center;  
+}
+
+img.talk_teaser {
+  float: left;
+  padding-left:0px;
+  padding-right:16px;
+  padding-top:16px;
+  padding-bottom:16px;
+}
+
+img.talk_teaser2 {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  padding-top:8px;
+  padding-bottom:4px;
+}
