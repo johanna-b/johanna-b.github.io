@@ -17,9 +17,9 @@
 <a href="index.html"><img class="" src="images/teaser.jpg" width="800" alt="GPU-Based Large-Scale Scientific Visualization - SIGGRAPH Asia 2018" /></a>
 
 <h4>Date</h4>
-December 2018<br>
-Time: TBA<br>
-Location: TBA<br>
+December 4th, 2018<br>
+Time: 2:15pm - 6:00pm <br>
+Location: Tokyo International Forum, Hall D1 (1F, D Block) <br>
 
 <h4>Course Speakers</h4>
 <a href="http://people.seas.harvard.edu/~jbeyer/">Johanna Beyer</a>, <a href="http://vcg.seas.harvard.edu/">Harvard University</a>
@@ -30,6 +30,9 @@ Location: TBA<br>
 <h2>Course Description</h2>
     Recent advances in image and volume acquisition as well as computational advances in simulation have led to an explosion of the amount of data that must be visualized and analyzed. Modern visualization techniques combine the parallel processing power of GPUs with out-of-core methods and data streaming to enable the interactive exploration of giga- and terabytes of image and volume data. A major enabler for interactivity is making both the computational and the visualization effort proportional to the amount of data that is actually visible on screen, decoupling it from the full data size. This leads to powerful display-aware multi-resolution techniques that enable the visualization of data of almost arbitrary size.
 
+    This course consists of two major parts: An introductory part that progresses from fundamentals to modern techniques, and a more advanced part that discusses details and the current state of the art of ray-guided volume rendering, display-aware processing, and novel data structures for efficient empty space skipping of large-scale multi-modal volumes.
+
+    You will learn how to develop efficient GPU data structures and large-scale visualizations, and how to implement out-of-core strategies and concepts such as virtual texturing, as well as how to use modern multi-resolution representations. These approaches reduce the GPU memory requirements of extremely large data to a working set size that fits into current GPUs. You will learn how to perform ray-casting of volume data of almost arbitrary size and how to render and process gigapixel images using scalable, display-aware techniques. We will describe custom virtual texturing architectures as well as recent hardware developments in this area. We will also describe novel deterministic and probabilistic empty space skipping methods for multi-modal volumes.
 
 <h4>Level</h4>
 Introductory
@@ -46,32 +49,30 @@ Introductory
 
 
 <div class="content_second color1">
-    <p class="talk_title">Introduction, Basics of Scalable Visualization and GPU Virtual Memory Architectures [60 min]
+    <p class="talk_title">Introduction, Basics of Scalable Volume Visualization [60 min]
     </p>
 
-    After introducing the course, I will describe GPU-based visualization techniques, focusing on GPU ray-casting for large volume data. We will look at fundamental data structures such as grids and trees, and discuss how to perform traversal on GPUs. We will discuss the basics of rendering large images and volumes using out-of-core approaches, and I will describe the basic ray-casting optimization techniques of empty space skipping and early ray termination with a focus on large data. I will give an overview of virtual texturing on GPUs and how virtual memory hierarchies can be employed for the interactive visualization of data of almost arbitrary size.
+    After introducing the course, I will start with outlining the main scalability issues in volume visualization of large data. I will introduce GPU-based volume visualization techniques such as GPU ray-casting and we will look at out-of-core and multi-resolution data structures such as grids and trees that allow interactive rendering of large data sets. Furthermore, we will outline some general techniques for data processing and rendering that are geared towards large volumes.
 
     <h4>Speaker</h4>
     <a href="https://vcc.kaust.edu.sa/Pages/Hadwiger.aspx">Markus Hadwiger</a>, <a href="https://vcc.kaust.edu.sa/Pages/Home.aspx">King Abdullah University of Science and Technology</a>
     <br>
-    email: markus.hadwiger @ kaust.edu.sa 
+    email: markus.hadwiger @ kaust.edu.sa
 
     <h4>Slides</h4>
-    TBA
-    <!--TODO
-    <a href="https://dl.dropboxusercontent.com/u/789390/siggraph_asia_course_2013/LargeScaleVisualization_Basics.pdf">pdf</a>
--->
+    <a href="https://johanna-b.github.io/LargeSciVis2018/slides/LargeScaleVisualization_Basics.pdf">pdf</a>
+
     <h4>Bio</h4>
     Markus Hadwiger is an Associate Professor in computer science and the Visual Computing Center (VCC) at King Abdullah University of Science and Technology (KAUST) in Saudi Arabia, which he joined in 2009. He leads the High-Performance Visualization research group at VCC, where his research interests include extreme-scale visual computing and visualization, volume visualization, medical visualization, large-scale image and volume processing, multi-resolution techniques, data streaming and out-of-core processing, interactive segmentation, and GPU algorithms and architectures. He is a co-author of the book Real-Time Volume Graphics published in 2006 and has been involved in many courses and tutorials about volume rendering and visualization at ACM SIGGRAPH, ACM SIGGRAPH Asia, IEEE Visualization, and Eurographics.
 
 </div>
 
 <div class="content_second color1">
-    <p class="talk_title">Scalable Volume Visualization Architectures and Applications [45 min]</p>
+    <p class="talk_title">Scalable Volume Visualization Architectures [45 min]</p>
 
     <img class="talk_teaser" src="images/scalablevis.jpg" width="300" alt="Scalable Volume Visualization Architectures and Applications" />
 
-    I will start by explaining some advanced techniques for large-scale ray-casting, including multi-level page tables for accessing terabyte-sized volumes on the GPU. In the second part of my talk, I will introduce and compare different volume processing architectures for handling large data. Data streaming and on-demand construction of 3D data blocks allows to circumvent expensive pre-processing and allows to process and stream data entirely on-demand, thereby limiting the amount of data that has to be handled to the visible subset on the screen. In the last part of my talk I will present higher-level applications that are built on top of current GPU-based visualization systems for large-scale data. I will present a system for query-guided visual analysis of large volumetric electron microscopy data, built on top of a powerful petascale visualization system.
+    I will start by giving an overview of past and current GPU-based volume rendering algorithms. I will introduce a categorization of scalable volume rendering algorithms based on a) how the volume data is being represented in memory, b) how the active subset of the data needed for rendering (i.e., the working set) is being determined, and c) how rendering is being performed. Based on this categorization, we will analyze the scalability of today's volume visualization algorithms. Furthermore, I will give an overview of virtual texturing on GPUs and how virtual memory hierarchies can be employed for the interactive visualization of data of almost arbitrary size.
 
     <h4>Speaker</h4>
     <a href="http://people.seas.harvard.edu/~jbeyer/">Johanna Beyer</a>, <a href="http://vcg.seas.harvard.edu/">Harvard University</a>
@@ -79,8 +80,7 @@ Introductory
     email: jbeyer @ seas.harvard.edu 
 
     <h4>Slides</h4>
-    TBA
-     <!--<a href="https://dl.dropboxusercontent.com/u/789390/siggraph_asia_course_2013/ScalableArchitectures.pdf">pdf</a>-->
+    <a href="https://johanna-b.github.io/LargeSciVis2018/slides/LargeScaleVisualization_Architectures.pdf">pdf</a>
 
     <h4>Bio</h4>
     Johanna Beyer is a research associate at the Visual Computing Lab at Harvard University. Before joining Harvard, she was a postdoctoral fellow at the Geometric Modeling and Scientific Visualization Center at KAUST. She received her Ph.D. in computer science at the University of Technology Vienna, Austria in 2009.
@@ -89,41 +89,38 @@ Introductory
 </div>
 
 <div class="content_second color1">
-    <p class="talk_title">Display-Aware Visualization and Processing, Multi-Resolution Representations [45 min]</p>
+    <p class="talk_title">GPU-Based Ray-Guided Volume Rendering, and Efficient Empty Space Skipping for Large-Scale Volume Rendering [60 min]</p>
 
-    <img class="talk_teaser" src="images/spdf.png" width="300" alt="Scalable Volume Visualization Architectures and Applications" />
+    <img class="talk_teaser" src="images/emptyspace.png" width="300" alt="Scalable Volume Visualization Architectures and Applications" />
 
     <br>
-    I will give an overview of display-aware techniques for the visualization and processing of gigapixel images and large-scale volume data, where the computational effort is proportional to the actually visible data instead of to the original data size. I will describe multi-resolution data structures that encode the information of high-resolution data in multi-resolution pyramids, e.g., using probability density functions of local pixel or voxel neighborhoods. This enables the accurate visualization of high-resolution data with arbitrary transfer functions at any output resolution.
+    I will start by introducing current GPU-based ray-guided volume rendering algorithms, which have been demonstrated to be the most efficient approaches for interactive volume rendering of large data. We will cover ray-guided algorithms that allow to load and process data entirely on-demand, thereby limiting the amount of data that has to be handled to the visible subset on the screen. Furthermore, I will describe recent extension to these ray-guided strategies, to enable efficient empty space skipping of large datasets containing fine and intricate structures. We will cover recent methods that limit the fragmentation of space that often occurs when skipping empty regions, and present a method that supports dynamic and interactive updates of 'empty' regions. By moving the major cost of empty space skipping out of the ray-casting stage and into the faster hardware rasterization stage, empty space skipping becomes scalable than standard octree empty space skipping approaches. Finally, I will also talk about efficient deterministic and probabilistic data structures that can be used for culling and empty space skipping of large-scale segmentation volumes, and describe a hybrid deterministic and probabilistic scalable culling architecture.
 
     <h4>Speaker</h4>
-    <a href="https://vcc.kaust.edu.sa/Pages/Hadwiger.aspx">Markus Hadwiger</a>, <a href="https://vcc.kaust.edu.sa/Pages/Home.aspx">King Abdullah University of Science and Technology</a>
+    <a href="http://people.seas.harvard.edu/~jbeyer/">Johanna Beyer</a>, <a href="http://vcg.seas.harvard.edu/">Harvard University</a>
     <br>
-    email: markus.hadwiger @ kaust.edu.sa
+    email: jbeyer @ seas.harvard.edu
 
     <h4>Slides</h4>
-    TBA
-    <!--TODO
-    <a href="https://dl.dropboxusercontent.com/u/789390/siggraph_asia_course_2013/LargeScaleVisualization_Basics.pdf">pdf</a>
--->
+    <a href="https://johanna-b.github.io/LargeSciVis2018/slides/LargeScaleVisualization_RayGuidedEmptySpace.pdf">pdf</a>
+
 
     </div>
 
     <div class="content_second color1">
-        <p class="talk_title">GPU-Based Ray-Guided Volume Rendering, and Efficient Empty Space Skipping for Large-Scale Volume Rendering [60 min]</p>
+        <p class="talk_title">Display-Aware Visualization and Processing [45 min]</p>
 
-        <img class="talk_teaser" src="images/emptyspace.png" width="300" alt="Scalable Volume Visualization Architectures and Applications" />
+        <img class="talk_teaser" src="images/spdf.png" width="300" alt="Scalable Volume Visualization Architectures and Applications" />
 
-        I will give an overview of current GPU-based ray-guided volume rendering algorithms, which have been demonstrated to be the most efficient approaches for interactive volume rendering of large data. Furthermore, I will describe recent extension to these ray-guided strategies, to enable efficient empty space skipping of large datasets containing fine and intricate structures. We will cover recent methods that limit the fragmentation of space that often occurs when skipping empty regions, and present a method that supports dynamic and interactive updates of 'empty' regions. By moving the major cost of empty space skipping out of the ray-casting stage and into the faster hardware rasterization stage, empty space skipping becomes scalable than standard octree empty space skipping approaches. Finally, I will also talk about efficient deterministic and probabilistic data structures that can be used for culling and empty space skipping of large-scale segmentation volumes, and describe a hybrid deterministic and probabilistic scalable culling architecture.
-
+        I will give an overview of display-aware techniques for the visualization and processing of gigapixel images and large-scale volume data, where the computational effort is proportional to the actually visible data instead of to the original data size. I will describe multi-resolution data structures that encode the information of high-resolution data in multi-resolution pyramids, e.g., using probability density functions of local pixel or voxel neighborhoods. This enables the accurate visualization of high-resolution data with arbitrary transfer functions at any output resolution.
         <h4>Speaker</h4>
-        <a href="http://people.seas.harvard.edu/~jbeyer/">Johanna Beyer</a>, <a href="http://vcg.seas.harvard.edu/">Harvard University</a>
+        <a href="https://vcc.kaust.edu.sa/Pages/Hadwiger.aspx">Markus Hadwiger</a>, <a href="https://vcc.kaust.edu.sa/Pages/Home.aspx">King Abdullah University of Science and Technology</a>
         <br>
-        email: jbeyer @ seas.harvard.edu
+        email: markus.hadwiger @ kaust.edu.sa
 
         <h4>Slides</h4>
-        TBA
-        <!--<a href="https://dl.dropboxusercontent.com/u/789390/siggraph_asia_course_2013/ScalableArchitectures.pdf">pdf</a>-->
+        <a href="https://johanna-b.github.io/LargeSciVis2018/slides/LargeScaleVisualization_DisplayAware.pdf">pdf</a>
+
 
     </div>
 
@@ -138,11 +135,6 @@ Introductory
         <br>
         email: markus.hadwiger @ kaust.edu.sa
 
-        <h4>Slides</h4>
-        TBA
-        <!--TODO
-        <a href="https://dl.dropboxusercontent.com/u/789390/siggraph_asia_course_2013/LargeScaleVisualization_Basics.pdf">pdf</a>
-    -->
 
     </div>
 
